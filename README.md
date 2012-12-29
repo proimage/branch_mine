@@ -12,6 +12,7 @@ Installation
 Open the ComputerCraft Zip archive in something like 7-Zip and place the "branch_mine" file (not folder!) in the /lua/rom/programs/turtle/ directory. This will make the program available to all your turtles in all your worlds.
 
 Specific Installation Instructions for Feed The Beast:
+
 1. Run the launcher.
 2. Click the "Edit Mod Pack" button under the MODPACKS tab.
 3. In the window that opens up, click the "Open Folder" button in the bottom-left.
