@@ -9,7 +9,7 @@ Some functions taken from the 'tunnel' program included with ComputerCraft / Fee
 
 Installation
 ------------
-Open the ComputerCraft Zip archive in something like 7-Zip and place the "build_mine" file (not folder!) in the /lua/rom/programs/turtle/ directory. This will make the program available to all your turtles in all your worlds.
+Open the ComputerCraft Zip archive in something like 7-Zip and place the "branch_mine" file (not folder!) in the /lua/rom/programs/turtle/ directory. This will make the program available to all your turtles in all your worlds.
 
 Specific Installation Instructions for Feed The Beast:
 1. Run the launcher.
