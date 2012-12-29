@@ -1,0 +1,654 @@
+local function refuel()
+	local fuelLevel = turtle.getFuelLevel()
+	if fuelLevel == "unlimited" or fuelLevel > 0 then
+		return
+	end
+
+	local function tryRefuel()
+		for n=1,16 do
+			if turtle.getItemCount(n) > 0 then
+				turtle.select(n)
+				if turtle.refuel(1) then
+					turtle.select(1)
+					return true
+				end
+			end
+		end
+		turtle.select(1)
+		return false
+	end
+
+	if not tryRefuel() then
+		print( "Add more fuel to continue." )
+		while not tryRefuel() do
+			sleep(1)
+		end
+		print( "Resuming branch mine..." )
+	end
+end
+
+local function tryDig()
+	while turtle.detect() do
+		if turtle.dig() then
+			sleep(0.5)
+		else
+			return false
+		end
+	end
+	return true
+end
+
+local function tryDigUp()
+	while turtle.detectUp() do
+		if turtle.digUp() then
+			sleep(0.5)
+		else
+			return false
+		end
+	end
+	return true
+end
+
+local function tryUp()
+	refuel()
+	while not turtle.up() do
+		if turtle.detectUp() then
+			if not tryDigUp() then
+				return false
+			end
+		elseif turtle.attackUp() then
+		else
+			sleep( 0.5 )
+		end
+	end
+	return true
+end
+
+local function tryDown()
+	refuel()
+	while not turtle.down() do
+		if turtle.detectDown() then
+			if not tryDigDown() then
+				return false
+			end
+		elseif turtle.attackDown() then
+		else
+			sleep( 0.5 )
+		end
+	end
+	return true
+end
+
+local function tryForward()
+	refuel()
+	while not turtle.forward() do
+		if turtle.detect() then
+			if not tryDig() then
+				return false
+			end
+		elseif turtle.attack() then
+		else
+			sleep( 0.5 )
+		end
+	end
+	return true
+end
+
+local function tryBuildPath()
+	refuel()
+	while not turtle.detectDown do
+		turtle.select(2)
+		turtle.placeDown()
+		turtle.turnLeft()
+		while not turtle.detect() do
+			if turtle.place() then
+			elseif turtle.attack() then
+			else
+				sleep( 0.5 )
+			end
+		end
+		turtle.turnRight()
+		turtle.turnRight()
+		while not turtle.detect() do
+			if turtle.place() then
+			elseif turtle.attack() then
+			else
+				sleep( 0.5 )
+			end
+		end
+		turtle.turnLeft()
+	elseif turtle.attackDown() then
+	else
+		sleep( 0.5 )
+	end
+	return true
+end
+
+
+local function excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side)
+	-- clear h*l area
+	tryBuildPath()
+	tryDigUp()
+	for n=1,l do
+		tryForward()
+		tryBuildPath()
+		tryDigUp()
+	end
+	if h == 3 then
+		turtle.turnLeft()
+		turtle.turnLeft()
+		tryUp()
+		tryDigUp()
+		tryUp()
+		for n=1,l do
+			tryForward()
+		end
+		tryDown()
+		tryDown()
+		turtle.turnRight()
+		turtle.turnRight()
+	elseif h == 4 then
+		turtle.turnLeft()
+		turtle.turnLeft()
+		tryUp()
+		tryDigUp()
+		tryUp()
+		tryDigUp()
+		for n=1,l do
+			tryForward()
+			tryDigUp()
+		end
+		tryDown()
+		tryDown()
+		turtle.turnRight()
+		turtle.turnRight()
+	else
+		if connect_branch_ends then
+			if branch_side == "right" then
+				turtle.turnLeft()
+				for i=1,settings["branch_spacing"] do
+					tryForward()
+					tryBuildPath()
+					tryDigUp()
+				end
+				turtle.turnRight()
+				turtle.turnRight()
+				for i=1,settings["branch_spacing"] do
+					tryForward()
+				end
+				turtle.turnLeft()
+			elseif branch_side == "left" then
+				turtle.turnRight()
+				for i=1,settings["branch_spacing"] do
+					tryForward()
+					tryBuildPath()
+					tryDigUp()
+				end
+				turtle.turnRight()
+				turtle.turnRight()
+				for i=1,settings["branch_spacing"] do
+					tryForward()
+				end
+				turtle.turnRight()
+			end
+		end
+		if return_to_origin then
+			turtle.turnRight()
+			turtle.turnRight()
+			for n=1,l do
+				tryForward()
+			end
+			turtle.turnLeft()
+			turtle.turnLeft()
+		end
+	end
+end
+
+
+local function excavate(settings, w, h, l, return_to_origin, connect_branch_ends, branch_side)
+	if w == 1 then
+		excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side)
+	elseif w == 3 then
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnLeft()
+		tryForward()
+		turtle.turnRight()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnRight()
+		tryForward()
+		tryForward()
+		turtle.turnLeft()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnLeft()
+		tryForward()
+		turtle.turnRight()
+		if not return_to_origin then
+			for n=1,l do
+				tryForward()
+			end
+		end
+	elseif w == 5 then
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnLeft()
+		tryForward()
+		turtle.turnRight()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnLeft()
+		tryForward()
+		turtle.turnRight()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnRight()
+		tryForward()
+		tryForward()
+		tryForward()
+		turtle.turnLeft()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnRight()
+		tryForward()
+		turtle.turnLeft()
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		turtle.turnLeft()
+		tryForward()
+		tryForward()
+		turtle.turnRight()
+		if not return_to_origin then
+			for n=1,l do
+				tryForward()
+			end
+		end
+	end
+end
+
+
+local function dig_branches(settings)
+	print("Beginning to excavate branches")
+
+	local num_segments = math.floor(settings["trunk_length"] / (settings["branch_spacing"]+1))
+	local return_to_origin = true
+
+	for i=1,num_segments do
+		print("Currently working on branch pairs " .. i .. "/" .. num_segments)
+		tryForward()
+		print("Beginning to excavate right branch")
+		turtle.turnRight()
+		excavate(
+			settings,
+			1,
+			2,
+			settings["branch_length"],
+			return_to_origin,
+			settings["connect_branch_ends"],
+			"right"
+		)
+		turtle.turnLeft()
+		print("Beginning to excavate left branch")
+		turtle.turnLeft()
+		excavate(
+			settings,
+			1,
+			2,
+			settings["branch_length"],
+			return_to_origin,
+			settings["connect_branch_ends"],
+			"left"
+		)
+		turtle.turnRight()
+	-- move forward a segment
+		for s=1,settings["branch_spacing"] do
+			tryForward()
+		end
+	end
+	print("Done excavating branches")
+end
+
+
+local function dig_trunk_segment(settings)
+	print("Beginning trunk segment")
+	local trunk_width
+	local trunk_height
+	if settings["trunk_size"] == "small" then
+		trunk_width = 1
+		trunk_height = 2
+	elseif settings["trunk_size"] == "medium" then
+		trunk_width = 3
+		trunk_height = 3
+	elseif settings["trunk_size"] == "large" then
+		trunk_width = 5
+		trunk_height = 4
+	end
+	local return_to_origin, connect_branch_ends, branch_side = false, false, false
+	excavate(
+		settings,
+		trunk_width,
+		trunk_height,
+		settings["branch_spacing"]+1,
+		return_to_origin,
+		connect_branch_ends,
+		branch_side
+	)
+	print("End of trunk segment")
+end
+
+
+local function dig_trunk(settings)
+	print("Beginning to excavate main trunk")
+
+	local num_segments = math.floor(settings["trunk_length"] / (settings["branch_spacing"]+1))
+
+-- Dig trunk segments
+	for i=1,num_segments do
+		print("Currently working on segment " .. i .. "/" .. num_segments)
+		dig_trunk_segment(settings)
+	end
+	print("Done excavating main trunk.")
+	-- return to origin
+	for a = 1,num_segments*(settings["branch_spacing"]+1) do
+		turtle.back()
+	end
+end
+
+
+local function start_digging(settings)
+	if settings["dig_main_trunk"] then
+		dig_trunk(settings)
+	end
+	dig_branches(settings)
+end
+
+--[[ INTERFACE
+================================================================== ]]
+
+local
+	about_program,
+	view_help,
+	config_trunk_length,
+	config_trunk_size,
+	config_trunk,
+	config_branch_spacing,
+	config_branch_length,
+	config_branches,
+	view_settings,
+	main_menu
+
+about_program = function(settings)
+	shell.run('clear')
+	print("      BRANCH MINE | ABOUT PROGRAM      ")
+	print("           v1.0 (2012-12-29)           ")
+	print("                                       ")
+	print(" Coded by Sandwich (@sandwich_hlp on   ")
+	print(" Twitter; sandwichHLP on YouTube)      ")
+	print(" Some functions taken from the 'tunnel'")
+	print(" program included with ComputerCraft / ")
+	print(" Feed The Beast.                       ")
+	print("                                       ")
+	print("                                       ")
+	print("         Press ENTER to continue       ")
+	io.read()
+	main_menu(settings)
+end
+
+view_help = function(settings)
+	shell.run('clear')
+	print("       BRANCH MINE | HELP & TIPS       ")
+	print("                                       ")
+	print("Place COAL into Slot 1 (charcoal won't ")
+	print("get auto-restocked during mining).     ")
+	print("Place COBBLESTONE into Slot 2 (used for")
+	print("placing down blocks)                   ")
+	print("                                       ")
+	print("Fill remaining slots with single blocks")
+	print("that you want the Turtle to keep, such ")
+	print("as iron, gold, and diamonds.           ")
+	print("                                       ")
+	print("         Press ENTER to continue       ")
+	io.read()
+	main_menu(settings)
+end
+
+
+config_trunk_length = function(settings)
+	shell.run('clear')
+	print(" BRANCH MINE | MAIN TRUNK CONFIGURATION")
+	print("                                       ")
+	if settings["dig_main_trunk"] == false then
+		print("Even though the Main Trunk is currently")
+		print("set to NOT be dug out, this value still")
+		print("is used to calculate how many branches ")
+		print("should be dug.                         ")
+		print("                                       ")
+	end
+	print(" Enter new length and press ENTER:     ")
+	local input = io.read()
+	input = input + 0 -- typecast to number
+	if type(input) == "number" then
+		settings["trunk_length"] = input
+		config_trunk(settings)
+	else
+		print("Invalid input - numbers only please")
+		textutils.slowPrint(".......................................")
+		config_trunk_length(settings)
+	end
+end
+
+
+config_trunk_size = function(settings)
+	shell.run('clear')
+	print(" BRANCH MINE | MAIN TRUNK CONFIGURATION")
+	print("                                       ")
+	print(" 1. Small - 2 high x 1 wide            ")
+	print(" 2. Medium - 3 high x 3 wide           ")
+	print(" 3. Large - 4 high x 5 wide            ")
+	print("                                       ")
+	print(" Select size [1-3] and press ENTER:  ")
+	local input = io.read()
+	if (input=="1") then
+		settings["trunk_size"] = "small"
+		config_trunk(settings)
+	elseif (input=="2") then
+		settings["trunk_size"] = "medium"
+		config_trunk(settings)
+	elseif (input=="3") then
+		settings["trunk_size"] = "large"
+		config_trunk(settings)
+	else
+		print("Invalid input - enter a number 1-3.")
+		textutils.slowPrint(".......................................")
+		config_trunk_size(settings)
+	end
+end
+
+
+config_trunk = function(settings)
+
+	shell.run('clear')
+
+	print(" BRANCH MINE | MAIN TRUNK CONFIGURATION")
+	print("                                       ")
+	print(" (Current values are in parentheses)   ")
+	print("                                       ")
+	write("1. Toggle Main Trunk Excavation ")
+	if settings["dig_main_trunk"] then write("(Dig)\n") else write("(Skip)\n") end
+	print("2. Edit Length (" .. settings["trunk_length"] .. ")")
+	write("3. Edit Size ")
+	if settings["trunk_size"] == "small" then
+		write("(Small - 2h x 1w)\n")
+	elseif settings["trunk_size"] == "medium" then
+		write("(Medium - 3h x 3w)\n")
+	elseif settings["trunk_size"] == "large" then
+		write("(Large - 4h x 5w)\n")
+	end
+	if settings["dig_main_trunk"] == false then
+		print(" (irrelevant while main trunk disabled)")
+	end
+	print("4. Main Menu                           ")
+	print("                                       ")
+	print(" Type a number [1-4] and press ENTER:  ")
+	local input = io.read()
+	if input == "1" then
+		settings["dig_main_trunk"] = not settings["dig_main_trunk"]
+		config_trunk(settings)
+	elseif input == "2" then
+		config_trunk_length(settings)
+	elseif input == "3" then
+		config_trunk_size(settings)
+	elseif input == "4" then
+		main_menu(settings)
+	else
+		print("Invalid input - enter a number 1-4")
+		textutils.slowPrint(".......................................")
+		config_trunk(settings)
+	end
+end
+
+
+config_branch_spacing = function(settings)
+	shell.run('clear')
+	print("  BRANCH MINE | BRANCH CONFIGURATION   ")
+	print("                                       ")
+	print("This is how many blocks will be between")
+	print("each branch. 3 is recommended.         ")
+	print("                                       ")
+	print("    Enter distance between branches    ")
+	print("           and press ENTER:            ")
+	local input = io.read()
+	input = input + 0 -- typecast to number
+	if type(input) == "number" then
+		settings["branch_spacing"] = input
+		config_branches(settings)
+	else
+		print("Invalid input - numbers only please")
+		textutils.slowPrint(".......................................")
+		config_branch_spacing(settings)
+	end
+end
+
+
+config_branch_length = function(settings)
+	shell.run('clear')
+	print("  BRANCH MINE | BRANCH CONFIGURATION   ")
+	print("                                       ")
+	print(" How long should each branch be? Please")
+	print(" note that this is counted from the    ")
+	print(" center of the main trunk, not from the")
+	print(" walls.                                ")
+	print("                                       ")
+	print("     Enter length and press ENTER:     ")
+	local input = io.read()
+	input = input + 0 -- typecast to number
+	if type(input) == "number" then
+		settings["branch_length"] = input
+		config_branches(settings)
+	else
+		print("Invalid input - numbers only please")
+		textutils.slowPrint(".......................................")
+		config_branch_length(settings)
+	end
+end
+
+
+config_branches = function(settings)
+
+	shell.run('clear')
+
+	print("  BRANCH MINE | BRANCH CONFIGURATION   ")
+	print("                                       ")
+	print(" (Current values are in parentheses)   ")
+	print("                                       ")
+	print("1. Edit Spacing (" .. settings["branch_spacing"] .. ")")
+	print("2. Edit Length: (" .. settings["branch_length"] .. ")")
+	write("3. Toggle Connect Branch Ends ")
+	if settings["connect_branch_ends"] then write("(Yes)\n") else write("(No)\n") end
+	print("4. Main Menu                           ")
+	print("                                       ")
+	print(" Type a number [1-4] and press ENTER:  ")
+	local input = io.read()
+	if input == "1" then
+		config_branch_spacing(settings)
+	elseif input == "2" then
+		config_branch_length(settings)
+	elseif input == "3" then
+		settings["connect_branch_ends"] = not settings["connect_branch_ends"]
+		config_branches(settings)
+	elseif input == "4" then
+		main_menu(settings)
+	else
+		print("Invalid input - enter a number 1-3")
+		textutils.slowPrint(".......................................")
+		config_branches(settings)
+	end
+end
+
+
+view_settings = function(settings)
+
+	shell.run('clear')
+
+	print("      BRANCH MINE | VIEW SETTINGS      ")
+	print("                                       ")
+	print("Main Trunk Length: " .. settings["trunk_length"])
+	write("Main Trunk Size: ")
+	if settings["trunk_size"] == "small" then
+		write("Small - 2h x 1w\n")
+	elseif settings["trunk_size"] == "medium" then
+		write("Medium - 3h x 3w\n")
+	elseif settings["trunk_size"] == "large" then
+		write("Large - 4h x 5w\n")
+	end
+	write("Excavate Main Trunk: ")
+	if settings["dig_main_trunk"] then write("Yes\n") else write ("No\n") end
+	print("Spacing Between Branches: " .. settings["branch_spacing"])
+	print("Branch Length: " .. settings["branch_length"])
+	write("Connect Branch Ends: ")
+	if settings["connect_branch_ends"] then write("Yes\n") else write ("No\n") end
+	print("                                       ")
+	print("         Press ENTER to continue       ")
+	io.read()
+	main_menu(settings)
+end
+
+main_menu = function(settings)
+
+	shell.run('clear')
+
+	print("        BRANCH MINE | MAIN MENU        ")
+	print("                                       ")
+	print(" 1. View settings                      ")
+	print(" 2. Configure main trunk               ")
+	print(" 3. Configure branches                 ")
+	print(" 4. Help                               ")
+	print(" 5. About this program                 ")
+	print(" 6. BEGIN                              ")
+	print("                                       ")
+	print(" Type a number 1-6 and press ENTER     ")
+
+	local input = io.read()
+	if input == "1" then
+		view_settings(settings)
+	elseif input == "2" then
+		config_trunk(settings)
+	elseif input == "3" then
+		config_branches(settings)
+	elseif input == "4" then
+		view_help(settings)
+	elseif input == "5" then
+		about_program(settings)
+	elseif input == "6" then
+		start_digging(settings)
+	else
+		print("Invalid input - enter a number 1-6")
+		textutils.slowPrint(".......................................")
+		main_menu(settings)
+	end
+end
+
+
+-- DEFAULTS
+local settings={}
+settings["trunk_length"] = 20
+settings["trunk_size"] = "medium"
+settings["dig_main_trunk"] = true
+settings["branch_spacing"] = 3
+settings["branch_length"] = 50
+settings["connect_branch_ends"] = true
+
+main_menu(settings)
