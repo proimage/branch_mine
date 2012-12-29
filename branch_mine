@@ -96,7 +96,7 @@ end
 
 local function tryBuildPath()
 	refuel()
-	while not turtle.detectDown do
+	while not turtle.detectDown() do
 		turtle.select(2)
 		turtle.placeDown()
 		turtle.turnLeft()
@@ -117,9 +117,6 @@ local function tryBuildPath()
 			end
 		end
 		turtle.turnLeft()
-	elseif turtle.attackDown() then
-	else
-		sleep( 0.5 )
 	end
 	return true
 end
