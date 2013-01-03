@@ -49,6 +49,17 @@ local function tryDigUp()
 	return true
 end
 
+local function tryDigDown()
+	while turtle.detectDown() do
+		if turtle.digDown() then
+			sleep(0.5)
+		else
+			return false
+		end
+	end
+	return true
+end
+
 local function tryUp()
 	refuel()
 	while not turtle.up() do
@@ -94,11 +105,17 @@ local function tryForward()
 	return true
 end
 
-local function tryBuildPath()
+local function tryBuildPath(left,right)
 	refuel()
+	turtle.select(2)
 	while not turtle.detectDown() do
-		turtle.select(2)
-		turtle.placeDown()
+		if turtle.placeDown() then
+		elseif turtle.attackDown() then
+		else
+			sleep( 0.5 )
+		end
+	end
+	if left then
 		turtle.turnLeft()
 		while not turtle.detect() do
 			if turtle.place() then
@@ -108,6 +125,8 @@ local function tryBuildPath()
 			end
 		end
 		turtle.turnRight()
+	end
+	if right then
 		turtle.turnRight()
 		while not turtle.detect() do
 			if turtle.place() then
@@ -122,13 +141,13 @@ local function tryBuildPath()
 end
 
 
-local function excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side)
+local function excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side, wall_left, wall_right)
 	-- clear h*l area
-	tryBuildPath()
-	tryDigUp()
+	-- tryBuildPath(wall_left, wall_right)
+	-- tryDigUp()
 	for n=1,l do
 		tryForward()
-		tryBuildPath()
+		tryBuildPath(wall_left, wall_right)
 		tryDigUp()
 	end
 	if h == 3 then
@@ -162,10 +181,14 @@ local function excavate_height(settings, h, l, return_to_origin, connect_branch_
 	else
 		if connect_branch_ends then
 			if branch_side == "right" then
+				turtle.turnRight()
+				tryDig()
 				turtle.turnLeft()
+				turtle.turnLeft()
+				tryBuildPath(false, true)
 				for i=1,settings["branch_spacing"] do
 					tryForward()
-					tryBuildPath()
+					tryBuildPath(true, true)
 					tryDigUp()
 				end
 				turtle.turnRight()
@@ -175,10 +198,14 @@ local function excavate_height(settings, h, l, return_to_origin, connect_branch_
 				end
 				turtle.turnLeft()
 			elseif branch_side == "left" then
+				turtle.turnLeft()
+				tryDig()
 				turtle.turnRight()
+				turtle.turnRight()
+				tryBuildPath(true, false)
 				for i=1,settings["branch_spacing"] do
 					tryForward()
-					tryBuildPath()
+					tryBuildPath(true, true)
 					tryDigUp()
 				end
 				turtle.turnRight()
@@ -204,18 +231,18 @@ end
 
 local function excavate(settings, w, h, l, return_to_origin, connect_branch_ends, branch_side)
 	if w == 1 then
-		excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, return_to_origin, connect_branch_ends, branch_side, true, true)
 	elseif w == 3 then
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, false)
 		turtle.turnLeft()
 		tryForward()
 		turtle.turnRight()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, true, false)
 		turtle.turnRight()
 		tryForward()
 		tryForward()
 		turtle.turnLeft()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, true)
 		turtle.turnLeft()
 		tryForward()
 		turtle.turnRight()
@@ -225,25 +252,25 @@ local function excavate(settings, w, h, l, return_to_origin, connect_branch_ends
 			end
 		end
 	elseif w == 5 then
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, false)
 		turtle.turnLeft()
 		tryForward()
 		turtle.turnRight()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, false)
 		turtle.turnLeft()
 		tryForward()
 		turtle.turnRight()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, true, false)
 		turtle.turnRight()
 		tryForward()
 		tryForward()
 		tryForward()
 		turtle.turnLeft()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, false)
 		turtle.turnRight()
 		tryForward()
 		turtle.turnLeft()
-		excavate_height(settings, h, l, true, connect_branch_ends, branch_side)
+		excavate_height(settings, h, l, true, connect_branch_ends, branch_side, false, true)
 		turtle.turnLeft()
 		tryForward()
 		tryForward()
@@ -268,6 +295,13 @@ local function dig_branches(settings)
 		tryForward()
 		print("Beginning to excavate right branch")
 		turtle.turnRight()
+		-- skip gap between trunk center and side wall
+		if settings["trunk_size"] == "medium" then
+			tryForward();
+		elseif settings["trunk_size"] == "large" then
+			tryForward();
+			tryForward();
+		end
 		excavate(
 			settings,
 			1,
@@ -280,6 +314,18 @@ local function dig_branches(settings)
 		turtle.turnLeft()
 		print("Beginning to excavate left branch")
 		turtle.turnLeft()
+		-- Skip gap between trunk center and side wall
+		-- Include extras to compensate for gap skipping
+		-- from the other branch side
+		if settings["trunk_size"] == "medium" then
+			tryForward();
+			tryForward();
+		elseif settings["trunk_size"] == "large" then
+			tryForward();
+			tryForward();
+			tryForward();
+			tryForward();
+		end
 		excavate(
 			settings,
 			1,
@@ -290,6 +336,16 @@ local function dig_branches(settings)
 			"left"
 		)
 		turtle.turnRight()
+		turtle.turnRight()
+		-- Include extras to compensate for gap skipping
+		-- from the other branch side
+		if settings["trunk_size"] == "medium" then
+			tryForward();
+		elseif settings["trunk_size"] == "large" then
+			tryForward();
+			tryForward();
+		end
+		turtle.turnLeft()
 	-- move forward a segment
 		for s=1,settings["branch_spacing"] do
 			tryForward()
@@ -339,9 +395,13 @@ local function dig_trunk(settings)
 	end
 	print("Done excavating main trunk.")
 	-- return to origin
+	turtle.turnLeft()
+	turtle.turnLeft()
 	for a = 1,num_segments*(settings["branch_spacing"]+1) do
-		turtle.back()
+		tryForward()
 	end
+	turtle.turnLeft()
+	turtle.turnLeft()
 end
 
 
@@ -475,7 +535,7 @@ config_trunk = function(settings)
 		write("(Large - 4h x 5w)\n")
 	end
 	if settings["dig_main_trunk"] == false then
-		print(" (irrelevant while main trunk disabled)")
+		print(" (affects start points for branches)")
 	end
 	print("4. Main Menu                           ")
 	print("                                       ")
@@ -526,8 +586,8 @@ config_branch_length = function(settings)
 	print("                                       ")
 	print(" How long should each branch be? Please")
 	print(" note that this is counted from the    ")
-	print(" center of the main trunk, not from the")
-	print(" walls.                                ")
+	print(" walls of the main trunk, not from the ")
+	print(" center.                               ")
 	print("                                       ")
 	print("     Enter length and press ENTER:     ")
 	local input = io.read()
